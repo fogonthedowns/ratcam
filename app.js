@@ -24,7 +24,7 @@ var lastimage
   , motionpath = ''
   , getnum = /^([0-9.]+)/
   , takepic = function() {
-  var child = exec('fswebcam -r 640x480 --rotate 270 --jpeg 75 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -r 640x480 --rotate 180 --jpeg 75 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
       primus.write(stdout);
       currentimage = Date.now() + '.jpg';
@@ -45,7 +45,7 @@ var lastimage
               var result = getnum.exec(stderr);
               if (result) {
                 var diff = parseFloat(result[0]);
-                if (diff > 800) {
+                if (diff > 900) {
                   motion = 30;
                 }
               }
