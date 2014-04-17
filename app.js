@@ -3,7 +3,7 @@ var exec = require('child_process').exec
   , express = require('express');
 
 var takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --no-banner --jpeg 25 -q '+Date.now()+'.jpg', { cwd: __dirname + '/pics' }, function(err,stdout,stderr) {
+  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 25 -q '+Date.now()+'.jpg', { cwd: __dirname + '/pics' }, function(err,stdout,stderr) {
     if (err) console.log(err);
   });
 };
