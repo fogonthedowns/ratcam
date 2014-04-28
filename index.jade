@@ -1,0 +1,17 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    title= 'ratcam'
+  body
+    img#pic
+    script(src='/primus/primus.js')
+    script(type='text/javascript').
+      'use strict';
+      
+      var primus = new Primus()
+        , imgel = document.getElementById('pic');
+
+      primus.on('data', function(data) {
+        imgel.setAttribute('src', 'data:image/jpg;base64,'+data);
+      });

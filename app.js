@@ -1,28 +1,56 @@
-var exec = require('child_process').exec
-  , fs = require('fs')
-  , express = require('express');
+'use strict';
 
-var takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q '+Date.now()+'.jpg', { cwd: __dirname + '/pics' }, function(err,stdout,stderr) {
-    if (err) console.log(err);
-  });
+var spawn = require('child_process').spawn
+  , fs = require('fs')
+  , http = require('http')
+  , Primus = require('primus')
+  , jade = require('jade');
+
+var indexhtml = jade.renderFile(__dirname + '/index.jade');
+
+var requesthandler = function(req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.write(indexhtml);
+  res.end();
 };
 
-setInterval(takepic, 2000);
+var server = http.createServer(requesthandler).listen(5000)
+  , primus = new Primus(server, { transformer: 'engine.io' });
 
-// watch for changes
-var latestfilename;
-fs.watch(__dirname + '/pics', function(event, filename) {
-  latestfilename = filename;
+var findendofjpg = function(buffer) {
+  var i;
+  for (i=0; i<buffer.length; i++) {
+    if (buffer[i] === 255)
+      if (buffer[i+1] === 217)
+        return i+1;
+  };
+  return 0;
+};
+
+var picdata = [];
+var child = spawn('fswebcam', ['-d', '/dev/video0', '-r', '640x480', '--rotate', '-90', '--jpeg', '35', '-q', '--no-banner', '-l', '1', '-']);
+
+child.stdout.on('data', function(data) {
+  var end
+    , pic;
+  if (end = findendofjpg(data)) {
+    picdata.push(data.slice(0,end));
+    pic = Buffer.concat(picdata);
+    primus.write(pic.toString('base64'));
+    fs.writeFile(__dirname + '/pics/' + Date.now() + '.jpg', pic, function(err) {
+      if (err) console.log('write error - ' + err);
+    });
+    picdata = [ data.slice(end+1) ];
+  } else {
+    picdata.push(data);
+  }
 });
 
-// webserver
-var app = express();
-
-app.get('/latestpic', function(req, res) {
-  res.send(latestfilename);
+child.stderr.on('data', function(data) {
+  console.error(data.toString());
 });
 
-app.use(express.static(__dirname + '/pics'));
+child.on('close', function(code) {
+  console.log('child process exited with code ' + code);
+});
 
-app.listen(8080);
