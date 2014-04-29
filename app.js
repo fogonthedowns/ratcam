@@ -14,19 +14,19 @@ var requesthandler = function(req, res) {
   res.end();
 };
 
-var server = http.createServer(requesthandler).listen(5000)
+var server = http.createServer(requesthandler).listen(5000,function() { console.log('Listening on 5000'); })
   , primus = new Primus(server, { transformer: 'engine.io' });
 
 var takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q --no-banner -', {encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q -', {encoding: null}, function(err, stdout, stderr) {
     if (!err && !stderr) {
-      primus.write(stdout);
+      primus.write(stdout.toString('base64'));
       return 0;
     }
 
     if (err) console.log(err);
-    if (stderr) console.error(new Buffer(stderr, 'base64').toString());
+    if (stderr) console.error(stderr);
   });
 };
 
-setInterval(function() { takepic(); }, 1000);
+setInterval(function() { takepic(); }, 2000);
