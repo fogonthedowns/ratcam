@@ -19,8 +19,14 @@ var server = http.createServer(requesthandler).listen(5000)
 
 var takepic = function() {
   var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q --no-banner -', {encoding: 'base64'}, function(err, stdout, stderr) {
-    primus.write(stdout);
+    if (!err && !stderr) {
+      primus.write(stdout);
+      return 0;
+    }
+
+    if (err) console.log(err);
+    if (stderr) console.error(new Buffer(stderr, 'base64').toString());
   });
 };
 
-setInterval(function() { takepic(); }, 500);
+setInterval(function() { takepic(); }, 1000);
