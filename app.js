@@ -14,18 +14,21 @@ var requesthandler = function(req, res) {
   res.end();
 };
 
-var server = http.createServer(requesthandler).listen(5000,function() { console.log('Listening on 5000'); })
+var server = http.createServer(requesthandler).listen(5000,function() { console.log('listening'); })
   , primus = new Primus(server, { transformer: 'engine.io' });
 
 var takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q -', {encoding: null}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q -', {encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
-      primus.write(stdout.toString('base64'));
+      primus.write(stdout);
+      fs.writeFile(__dirname + '/pics/' + Date.now() + '.jpg', new Buffer(stdout, 'base64'), function(err) {
+        if (err) console.error(err);
+      });
       return 0;
     }
 
     if (err) console.log(err);
-    if (stderr) console.error(stderr);
+    if (stderr) console.error(new Buffer(stderr, 'base64').toString());
   });
 };
 
