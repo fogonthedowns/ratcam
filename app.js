@@ -14,13 +14,16 @@ var requesthandler = function(req, res) {
   res.end();
 };
 
-var server = http.createServer(requesthandler).listen(5000)
+var server = http.createServer(requesthandler).listen(5000,function() { console.log('listening'); })
   , primus = new Primus(server, { transformer: 'engine.io' });
 
 var takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q --no-banner -', {encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q -', {encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
       primus.write(stdout);
+      fs.writeFile(__dirname + '/pics/' + Date.now() + '.jpg', new Buffer(stdout, 'base64'), function(err) {
+        if (err) console.error(err);
+      });
       return 0;
     }
 
@@ -29,4 +32,4 @@ var takepic = function() {
   });
 };
 
-setInterval(function() { takepic(); }, 1000);
+setInterval(function() { takepic(); }, 2000);
