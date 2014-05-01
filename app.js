@@ -21,27 +21,24 @@ var server = http.createServer(requesthandler).listen(5000,function() { console.
 var lastimage
   , currentimage
   , takepic = function() {
-  var child = exec('fswebcam -d /dev/video0 -r 640x480 --rotate -90 --jpeg 35 -q -', {encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -r 640x480 --rotate 270 --jpeg 35 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
       primus.write({action: 'updatepic', data: stdout});
       currentimage = Date.now() + '.jpg';
       fs.writeFile(__dirname + '/pics/' + currentimage, new Buffer(stdout, 'base64'), function(err) {
         if (err) console.error(err);
-	console.log(currentimage + ' ' + lastimage);
         var compare = exec(
-          'compare -quiet ' + currentimage + ' ' + lastimage + ' /tmp/diff.png',
-          {cwd: __dirname + '/pics'},
+          'compare -quiet ' + currentimage + ' ' + lastimage + ' -',
+          {
+            cwd: __dirname + '/pics',
+            encoding: 'base64',
+            maxBuffer: 1000000
+          },
           function(err, stdout, stderr) {
-            if (!err && !stderr) {
-              fs.readFile('/tmp/diff.png', {encoding: 'base64'}, function(err, data) {
-                primus.write({action: 'updatedif', data: data});
-		takepic();
-              });
-            } else {
-              if (err) console.error(err);
-              if (stderr) console.error(new Buffer(stderr, 'base64').toString());
-              takepic();
-            }
+            primus.write({action: 'updatedif', data: stdout});
+            if (err) console.error(err);
+            if (stderr) console.error(new Buffer(stderr, 'base64').toString());
+            takepic();
           }
         );
         lastimage = currentimage;
