@@ -27,22 +27,24 @@ var lastimage
       currentimage = Date.now() + '.jpg';
       fs.writeFile(__dirname + '/pics/' + currentimage, new Buffer(stdout, 'base64'), function(err) {
         if (err) console.error(err);
+	console.log(currentimage + ' ' + lastimage);
         var compare = exec(
-          'compare -quiet ' + currentimage + ' ' + lastimage + ' -',
-          {
-            cwd: __dirname + '/pics',
-            encoding: 'base64'
-          },
+          'compare -quiet ' + currentimage + ' ' + lastimage + ' /tmp/diff.png',
+          {cwd: __dirname + '/pics'},
           function(err, stdout, stderr) {
             if (!err && !stderr) {
-              primus.write({action: 'updatedif', data: stdout});
+              fs.readFile('/tmp/diff.png', {encoding: 'base64'}, function(err, data) {
+                primus.write({action: 'updatedif', data: data});
+		takepic();
+              });
             } else {
-              console.error(new Buffer(stderr, 'base64').toString());
+              if (err) console.error(err);
+              if (stderr) console.error(new Buffer(stderr, 'base64').toString());
+              takepic();
             }
           }
         );
         lastimage = currentimage;
-        takepic();
       });
     } else {
       if (err) console.error(err);
