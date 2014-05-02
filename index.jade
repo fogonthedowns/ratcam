@@ -5,22 +5,13 @@ html(lang='en')
     title= 'ratcam'
   body
     img#pic
-    img#dif
     script(src='/primus/primus.js')
     script(type='text/javascript').
       'use strict';
       
       var primus = new Primus()
-        , imgel = document.getElementById('pic')
-        , difel = document.getElementById('dif');
+        , imgel = document.getElementById('pic');
 
       primus.on('data', function(data) {
-        switch(data.action) {
-          case 'updatepic':
-            imgel.setAttribute('src', 'data:image/jpg;base64,'+data.data);
-            break;
-          case 'updatedif':
-            difel.setAttribute('src', 'data:image/png;base64,'+data.data);
-            break;
-        };
+        imgel.setAttribute('src', 'data:image/jpg;base64,'+data);
       });

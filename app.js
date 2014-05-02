@@ -20,27 +20,42 @@ var server = http.createServer(requesthandler).listen(5000,function() { console.
 
 var lastimage
   , currentimage
+  , motion
+  , motionpath = ''
+  , getnum = /^([0-9.]+)/
   , takepic = function() {
-  var child = exec('fswebcam -r 640x480 --rotate 270 --jpeg 35 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -r 640x480 --rotate 270 --jpeg 75 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
-      primus.write({action: 'updatepic', data: stdout});
+      primus.write(stdout);
       currentimage = Date.now() + '.jpg';
-      fs.writeFile(__dirname + '/pics/' + currentimage, new Buffer(stdout, 'base64'), function(err) {
+      if (motion) {
+        motion--;
+        console.log('motion: ' + motion);
+        motionpath = 'motion/';
+      } else {
+        motionpath = '';
+      }
+      fs.writeFile(__dirname + '/pics/' + motionpath + currentimage, new Buffer(stdout, 'base64'), function(err) {
         if (err) console.error(err);
-        var compare = exec(
-          'compare -quiet ' + currentimage + ' ' + lastimage + ' -',
-          {
-            cwd: __dirname + '/pics',
-            encoding: 'base64',
-            maxBuffer: 1000000
-          },
-          function(err, stdout, stderr) {
-            primus.write({action: 'updatedif', data: stdout});
-            if (err) console.error(err);
-            if (stderr) console.error(new Buffer(stderr, 'base64').toString());
-            takepic();
-          }
-        );
+        if (!motion) {
+          var compare = exec(
+            'compare -metric mae ' + currentimage + ' ' + lastimage + ' /dev/null',
+            { cwd: __dirname + '/pics' },
+            function(err, stdout, stderr) {
+              var result = getnum.exec(stderr);
+              if (result) {
+                var diff = parseFloat(result[0]);
+                if (diff > 800) {
+                  motion = 30;
+                }
+              }
+              console.log(diff);
+              takepic();
+            }
+          );
+        } else {
+          takepic();
+        }
         lastimage = currentimage;
       });
     } else {
