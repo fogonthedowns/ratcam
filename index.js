@@ -6,7 +6,7 @@ var exec = require('child_process').exec
   , Primus = require('primus')
   , jade = require('jade');
 
-var indexhtml = jade.renderFile(__dirname + '/index.jade');
+var indexhtml = jade.renderFile(__dirname + '/views/index.jade');
 
 var requesthandler = function(req, res) {
   res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -24,7 +24,7 @@ var lastimage
   , motionpath = ''
   , getnum = /^([0-9.]+)/
   , takepic = function() {
-  var child = exec('fswebcam -r 640x480 --rotate 180 --jpeg 75 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
+  var child = exec('fswebcam -r 640x480 --jpeg 75 -q -',{encoding: 'base64'}, function(err, stdout, stderr) {
     if (!err && !stderr) {
       primus.write(stdout);
       currentimage = Date.now() + '.jpg';
@@ -50,20 +50,20 @@ var lastimage
                 }
               }
               console.log(diff);
-              takepic();
+              process.nextTick(takepic);
             }
           );
         } else {
-          takepic();
+          process.nextTick(takepic);
         }
         lastimage = currentimage;
       });
     } else {
       if (err) console.error(err);
       console.error(new Buffer(stderr, 'base64').toString());
-      takepic();
+      process.nextTick(takepic);
     }
   });
 }
 
-takepic();
+process.nextTick(takepic);
